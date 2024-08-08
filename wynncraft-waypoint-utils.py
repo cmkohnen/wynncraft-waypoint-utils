@@ -50,7 +50,7 @@ args = parser.parse_args()
 
 def waypoint_location_tuple(waypoint: dict) -> tuple[int, int, int]:
     location_dict = waypoint['location']
-    return (location_dict[key] for key in ('x', 'y', 'z'))
+    return tuple(location_dict[key] for key in ('x', 'y', 'z'))
 
 
 def waypoint_distance(
@@ -77,19 +77,20 @@ if args.filter_radius[0]:
     matches = 0
 
     for i, waypoint in enumerate(waypoints, 1):
-        location = tuple(waypoint_location_tuple(waypoint))
+        location = waypoint_location_tuple(waypoint)
         match_found = False
         for other_waypoint in waypoints[i:]:
-            other_location = tuple(waypoint_location_tuple(other_waypoint))
+            other_location = waypoint_location_tuple(other_waypoint)
             dst = waypoint_distance(location, other_location)
 
-            if dst < radius:
-                match_found = True
-                matches += 1
-                if args.verbose:
-                    print(f'found match: {location} -> {other_location}'
-                          f' ({dst} blocks distance)')
-                break
+            if dst > radius:
+                continue
+            match_found = True
+            matches += 1
+            if args.verbose:
+                print(f'found match: {location} -> {other_location}'
+                      f' ({dst} blocks distance)')
+            break
 
         if not match_found:
             filtered_waypoints.append(waypoint)
@@ -98,4 +99,5 @@ if args.filter_radius[0]:
         waypoints = filtered_waypoints
         print(f'Found {matches} matches.')
 
-json.dump(waypoints, args.output, indent=4)
+# write output to file
+json.dump(waypoints, args.output, indent=2)
