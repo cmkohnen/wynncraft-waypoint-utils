@@ -89,7 +89,7 @@ if args.filter_radius[0]:
             matches += 1
             if args.verbose:
                 print(f'found match: {location} -> {other_location}'
-                      f' ({dst} blocks distance)')
+                      f' ({dst:0.2f} blocks distance)')
             break
 
         if not match_found:
