@@ -45,20 +45,36 @@ parser.add_argument(
     default=0,
     dest='filter_radius',
 )
+parser.add_argument(
+    '--filter-box',
+    nargs=6,
+    type=int,
+    dest='filter_box',
+)
 args = parser.parse_args()
 
+Location = tuple[int, int, int]
 
-def waypoint_location_tuple(waypoint: dict) -> tuple[int, int, int]:
+
+def waypoint_location_tuple(waypoint: dict) -> Location:
     location_dict = waypoint['location']
     return tuple(location_dict[key] for key in ('x', 'y', 'z'))
 
 
-def waypoint_distance(
-    waypoint1: tuple[int, int, int],
-    waypoint2: tuple[int, int, int],
-) -> float:
+def waypoint_distance(waypoint1: Location, waypoint2: Location) -> float:
     vector = (b - a for a, b in zip(waypoint1, waypoint2))
     return math.sqrt(sum(i*i for i in vector))
+
+
+def waypoint_in_box(
+    waypoint: Location,
+    bound1: Location,
+    bound2: Location,
+) -> bool:
+    return all(
+        i <= max(a, b) and i >= min(a, b)
+        for i, a, b in zip(waypoint, bound1, bound2)
+    )
 
 
 waypoints = []
@@ -69,7 +85,7 @@ for file in args.input:
 
 
 # Radius based filtering
-if args.filter_radius[0]:
+if args.filter_radius != 0:
     radius = args.filter_radius[0]
     print(f'Filtering waypoints within {radius} blocks of distance')
 
@@ -98,6 +114,18 @@ if args.filter_radius[0]:
     if matches:
         waypoints = filtered_waypoints
         print(f'Found {matches} matches.')
+
+# Box based filtering
+if args.filter_box is not None:
+    bound1 = tuple(args.filter_box[:3])
+    bound2 = tuple(args.filter_box[3:])
+    print(f'Filtering waypoints within box defined by {bound1} and {bound2}')
+
+    waypoints = [
+        waypoint for waypoint in waypoints
+        if waypoint_in_box(waypoint_location_tuple(waypoint), bound1, bound2)
+    ]
+    print(f'{len(waypoints)} matches found')
 
 # write output to file
 json.dump(waypoints, args.output, indent=2)
