@@ -51,6 +51,22 @@ parser.add_argument(
     type=int,
     dest='filter_box',
 )
+parser.add_argument(
+    '--sort-radial',
+    nargs=3,
+    type=int,
+    dest='sort_radial',
+)
+parser.add_argument(
+    '--sort-alphanumeric',
+    action='store_true',
+    dest='sort_alphanumeric',
+)
+parser.add_argument(
+    '--invert-sort',
+    action='store_true',
+    dest='invert_sort',
+)
 args = parser.parse_args()
 
 Location = tuple[int, int, int]
@@ -63,7 +79,7 @@ def waypoint_location_tuple(waypoint: dict) -> Location:
 
 def waypoint_distance(waypoint1: Location, waypoint2: Location) -> float:
     vector = (b - a for a, b in zip(waypoint1, waypoint2))
-    return math.sqrt(sum(i*i for i in vector))
+    return math.sqrt(sum(i * i for i in vector))
 
 
 def waypoint_in_box(
@@ -71,10 +87,8 @@ def waypoint_in_box(
     bound1: Location,
     bound2: Location,
 ) -> bool:
-    return all(
-        i <= max(a, b) and i >= min(a, b)
-        for i, a, b in zip(waypoint, bound1, bound2)
-    )
+    return all(i <= max(a, b) and i >= min(a, b)
+               for i, a, b in zip(waypoint, bound1, bound2))
 
 
 waypoints = []
@@ -82,7 +96,6 @@ waypoints = []
 # read input files
 for file in args.input:
     waypoints.extend(json.load(file))
-
 
 # Radius based filtering
 if args.filter_radius != 0:
@@ -126,6 +139,23 @@ if args.filter_box is not None:
         if waypoint_in_box(waypoint_location_tuple(waypoint), bound1, bound2)
     ]
     print(f'{len(waypoints)} matches found')
+
+# Radius sorting
+if args.sort_radial is not None:
+    center = tuple(args.sort_radial)
+    print(f'Sorting waypoints by distance to {center}')
+    waypoints.sort(
+        key=lambda x: waypoint_distance(center, waypoint_location_tuple(x)))
+
+# Alphanumeric sorting
+if args.sort_alphanumeric:
+    print(f'Sorting waypoints by name')
+    waypoints.sort(key=lambda x: x["name"])
+
+# Invert sort
+if args.invert_sort:
+    print(f'Inverting waypoint order')
+    waypoints = list(reversed(waypoints))
 
 # write output to file
 json.dump(waypoints, args.output, indent=2)
