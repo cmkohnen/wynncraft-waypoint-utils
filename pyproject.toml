@@ -1,0 +1,20 @@
+[project]
+name = "wynncraft-waypoint-utils"
+version = "0.0.1"
+description = "Wynncraft Waypoint Utils"
+authors = [
+  { name="Christoph Matthias Kohnen", email="mail@cmkohnen.de" },
+]
+dependencies = []
+requires-python = ">=3.8"
+
+[project.urls]
+Repository = "https://github.com/cmkohnen/wynncraft-waypoint-utils"
+Issues = "https://github.com/cmkohnen/wynncraft-waypoint-utils/issues"
+
+[project.scripts]
+wynncraft-waypoint-utils = "wynncraft_waypoint_utils.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
