@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2024 Christoph Matthias Kohnen
+# Copyright 2024-2025 Christoph Matthias Kohnen
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
 import argparse
 import json
 import math
+import wynncraft_waypoint_utils as utils
+from wynncraft_waypoint_utils import Box, Location
 
 def main():
     parser = argparse.ArgumentParser(description='Wynncraft Waypoint Utils')
@@ -70,28 +72,6 @@ def main():
     )
     args = parser.parse_args()
 
-    Location = tuple[int, int, int]
-
-
-    def waypoint_location_tuple(waypoint: dict) -> Location:
-        location_dict = waypoint['location']
-        return tuple(location_dict[key] for key in ('x', 'y', 'z'))
-
-
-    def waypoint_distance(waypoint1: Location, waypoint2: Location) -> float:
-        vector = (b - a for a, b in zip(waypoint1, waypoint2))
-        return math.sqrt(sum(i * i for i in vector))
-
-
-    def waypoint_in_box(
-        waypoint: Location,
-        bound1: Location,
-        bound2: Location,
-    ) -> bool:
-        return all(i <= max(a, b) and i >= min(a, b)
-                   for i, a, b in zip(waypoint, bound1, bound2))
-
-
     waypoints = []
 
     # read input files
@@ -107,11 +87,11 @@ def main():
         matches = 0
 
         for i, waypoint in enumerate(waypoints, 1):
-            location = waypoint_location_tuple(waypoint)
+            location = Location.from_wynntils_waypoint(waypoint)
             match_found = False
             for other_waypoint in waypoints[i:]:
-                other_location = waypoint_location_tuple(other_waypoint)
-                dst = waypoint_distance(location, other_location)
+                other_location = Location.from_wynntils_waypoint(waypoint)
+                dst = location.distance_to(other_location)
 
                 if dst > radius:
                     continue
@@ -131,22 +111,24 @@ def main():
 
     # Box based filtering
     if args.filter_box is not None:
-        bound1 = tuple(args.filter_box[:3])
-        bound2 = tuple(args.filter_box[3:])
-        print(f'Filtering waypoints within box defined by {bound1} and {bound2}')
+        bound1 = Location.from_tuple(args.filter_box[:3])
+        bound2 = Location.from_tuple(args.filter_box[3:])
+        box = Box(bound1, bound2)
+        print(f'Filtering waypoints within box {box}')
 
         waypoints = [
             waypoint for waypoint in waypoints
-            if waypoint_in_box(waypoint_location_tuple(waypoint), bound1, bound2)
+            if box.contains(Location.from_wynntils_waypoint(waypoint))
         ]
         print(f'{len(waypoints)} matches found')
 
     # Radius sorting
     if args.sort_radial is not None:
-        center = tuple(args.sort_radial)
+        center = Location.from_tuple(args.sort_radial)
         print(f'Sorting waypoints by distance to {center}')
         waypoints.sort(
-            key=lambda x: waypoint_distance(center, waypoint_location_tuple(x)))
+            key=lambda x: Location.from_wynntils_waypoint(x).distance_to(center),
+        )
 
     # Alphanumeric sorting
     if args.sort_alphanumeric:

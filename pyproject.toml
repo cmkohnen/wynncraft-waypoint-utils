@@ -1,12 +1,18 @@
 [project]
 name = "wynncraft-waypoint-utils"
-version = "0.0.1"
+version = "0.0.2"
 description = "Wynncraft Waypoint Utils"
 authors = [
   { name="Christoph Matthias Kohnen", email="mail@cmkohnen.de" },
 ]
 dependencies = []
 requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+readme = "README.md"
 
 [project.urls]
 Repository = "https://github.com/cmkohnen/wynncraft-waypoint-utils"
@@ -16,5 +22,5 @@ Issues = "https://github.com/cmkohnen/wynncraft-waypoint-utils/issues"
 wynncraft-waypoint-utils = "wynncraft_waypoint_utils.cli:main"
 
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
