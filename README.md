@@ -8,5 +8,5 @@ Utilities for managing waypoints on Wynncraft
 
 Radius Based Filtering
 ```bash
-./wynncraft-waypoint-utils.py --input in1.json in2.json --filter-radius=3 --output out.json
+wynncraft-waypoint-utils --input in1.json in2.json --filter-radius=3 --output out.json
 ```
