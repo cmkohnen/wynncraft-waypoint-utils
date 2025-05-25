@@ -14,6 +14,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import math
+
 
 class Location:
 
@@ -27,14 +29,13 @@ class Location:
         return cls(*tuple_)
 
     @classmethod
-    def from_wynntils_waypoint(cls, waypoint: dict):
-        location_dict = waypoint['location']
-        return cls.from_tuple(location_dict[key] for key in ('x', 'y', 'z'))
+    def from_dict(cls, dict_: dict):
+        return cls.from_tuple(int(dict_[key]) for key in ('x', 'y', 'z'))
 
     @classmethod
     def from_string(cls, string: str):
         string = string.replace('`', '').replace(',', '')
-        return cls.from_tuple(string.split(" "))
+        return cls.from_tuple(string.split(' '))
 
     def __iter__(self):
         yield self.x
@@ -48,11 +49,7 @@ class Location:
         return tuple(self.x, self.y, self.z)
 
     def as_dict(self) -> dict:
-        return {
-            'x': self.x,
-            'y': self.y,
-            'z': self.z,
-        }
+        return {key: int(getattr(self, key)) for key in ('x', 'y', 'z')}
 
     def distance_to(self, other) -> float:
         vector = (b - a for a, b in zip(self, other))
@@ -74,7 +71,8 @@ class Box:
 
     def contains(self, location: Location) -> bool:
         return all(i <= max(a, b) and i >= min(a, b)
-                   for i, a, b in zip(location, a, b))
+                   for i, a, b in zip(location, self.a, self.b))
+
 
 class Sphere:
 
@@ -89,3 +87,64 @@ class Sphere:
 
     def contains(self, location: Location) -> bool:
         return self.center.distance_to(location) <= self.r
+
+
+class Waypoint:
+
+    def __init__(
+        self,
+        location: Location = None,
+        name: str = 'Waypoint',
+        color: str = '#ffffff',
+        icon: str = 'flag',
+        visibility: str = 'default',
+    ):
+        if location is None:
+            location = Location()
+        self.location = location
+        self.name = name
+        self.color = color
+        self.icon = icon
+        self.visibility = visibility
+
+    @classmethod
+    def from_dict(cls, dict_: dict):
+        return cls(Location.from_dict(dict_['location']), dict_['name'],
+                   dict_['color'], dict_['icon'], dict_['visibility'])
+
+    def as_dict(self) -> dict:
+        return {
+            'name': str(self.name),
+            'color': str(self.color),
+            'icon': str(self.icon),
+            'visibility': str(self.visibility),
+            'location': self.location.as_dict(),
+        }
+
+    def __str__(self) -> str:
+        return str(self.as_dict())
+
+
+class WaypointList(list):
+
+    @classmethod
+    def from_list(cls, list_: list):
+        return cls(Waypoint.from_dict(waypoint) for waypoint in list_)
+
+    def as_list(self) -> list:
+        return [waypoint.as_dict() for waypoint in self]
+
+    def filter(self, callback) -> None:
+        self[:] = [x for x in self if callback(x)]
+
+    def filter_box(self, box: Box) -> None:
+        self.filter(lambda x: box.contains(x.location))
+
+    def filter_sphere(self, sphere: Sphere) -> None:
+        self.filter(lambda x: sphere.contains(x.location))
+
+    def sort_alphanumeric(self) -> None:
+        self.sort(key=lambda x: x.name)
+
+    def sort_radial(self, center: Location) -> None:
+        self.sort(key=lambda x: x.location.distance_to(center))

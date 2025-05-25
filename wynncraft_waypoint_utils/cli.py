@@ -17,9 +17,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import argparse
 import json
-import math
-import wynncraft_waypoint_utils as utils
-from wynncraft_waypoint_utils import Box, Location
+
+from wynncraft_waypoint_utils import Box, Location, WaypointList
+
 
 def main():
     parser = argparse.ArgumentParser(description='Wynncraft Waypoint Utils')
@@ -72,11 +72,11 @@ def main():
     )
     args = parser.parse_args()
 
-    waypoints = []
+    waypoints = WaypointList()
 
     # read input files
     for file in args.input:
-        waypoints.extend(json.load(file))
+        waypoints.extend(WaypointList.from_list(json.load(file)))
 
     # Radius based filtering
     if args.filter_radius != 0:
@@ -86,11 +86,11 @@ def main():
         filtered_waypoints = []
         matches = 0
 
-        for i, waypoint in enumerate(waypoints, 1):
-            location = Location.from_wynntils_waypoint(waypoint)
+        for i, waypoint in enumerate(waypoints[:-1], 1):
+            location = waypoint.location
             match_found = False
             for other_waypoint in waypoints[i:]:
-                other_location = Location.from_wynntils_waypoint(waypoint)
+                other_location = other_waypoint.location
                 dst = location.distance_to(other_location)
 
                 if dst > radius:
@@ -106,7 +106,7 @@ def main():
                 filtered_waypoints.append(waypoint)
 
         if matches:
-            waypoints = filtered_waypoints
+            waypoints.filter(lambda x: x in filtered_waypoints)
             print(f'Found {matches} matches.')
 
     # Box based filtering
@@ -116,32 +116,28 @@ def main():
         box = Box(bound1, bound2)
         print(f'Filtering waypoints within box {box}')
 
-        waypoints = [
-            waypoint for waypoint in waypoints
-            if box.contains(Location.from_wynntils_waypoint(waypoint))
-        ]
+        waypoints.filter_box(box)
         print(f'{len(waypoints)} matches found')
 
     # Radius sorting
     if args.sort_radial is not None:
         center = Location.from_tuple(args.sort_radial)
         print(f'Sorting waypoints by distance to {center}')
-        waypoints.sort(
-            key=lambda x: Location.from_wynntils_waypoint(x).distance_to(center),
-        )
+        waypoints.sort_radial(center)
 
     # Alphanumeric sorting
     if args.sort_alphanumeric:
-        print(f'Sorting waypoints by name')
-        waypoints.sort(key=lambda x: x["name"])
+        print('Sorting waypoints by name')
+        waypoints.sort_alphanumeric()
 
     # Invert sort
     if args.invert_sort:
-        print(f'Inverting waypoint order')
-        waypoints = list(reversed(waypoints))
+        print('Inverting waypoint order')
+        waypoints.reverse()
 
     # write output to file
-    json.dump(waypoints, args.output, indent=2)
+    json.dump(waypoints.as_list(), args.output, indent=2)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()
